@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Karaoke Web App</title>
+</head>
+<body>
+  <h1>Karaoke Casero</h1>
+
+  <label for="youtube-url">Pegá el link de YouTube:</label><br>
+  <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." size="60" />
+  <button id="load-video">Cargar Video</button>
+
+  <div id="player" style="margin-top: 20px;"></div>
+
+  <br>
+  <button id="start">Iniciar Karaoke</button>
+
+  <script>
+    let player;
+    let audioContext;
+    let micStream;
+
+    // Función para extraer el ID del video desde una URL de YouTube
+    function extractVideoId(url) {
+      const match = url.match(/[?&]v=([^&]+)/);
+      return match ? match[1] : null;
+    }
+
+    document.getElementById('load-video').addEventListener('click', () => {
+      const url = document.getElementById('youtube-url').value;
+      const videoId = extractVideoId(url);
+
+      if (!videoId) {
+        alert('URL inválida de YouTube.');
+        return;
+      }
+
+      if (player) {
+        player.loadVideoById(videoId);
+      } else {
+        player = new YT.Player('player', {
+          height: '360',
+          width: '640',
+          videoId: videoId,
+          playerVars: { 'playsinline': 1 },
+          events: {
+            'onReady': () => console.log('Reproductor listo.')
+          }
+        });
+      }
+    });
+
+    document.getElementById('start').addEventListener('click', async () => {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const micSource = audioContext.createMediaStreamSource(micStream);
+        micSource.connect(audioContext.destination);
+      } catch (err) {
+        alert('No se pudo acceder al micrófono: ' + err);
+      }
+
+      if (player && player.playVideo) {
+        player.playVideo();
+      }
+    });
+
+    // Cargar la API de YouTube
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+  </script>
+</body>
+</html>
